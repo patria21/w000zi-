@@ -1,1 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SHA-256 Hash Terminal</title>
+  <style>
+    body {
+      background-color: #000;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 0;
+    }
+
+    .terminal {
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      color: #00ff00;
+      text-align: center;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background: #000;
+      border: 1px solid #00ff00;
+      color: #00ff00;
+      font-size: 1.1rem;
+      font-family: inherit;
+      border-radius: 5px;
+    }
+
+    #hashOutput {
+      margin-top: 20px;
+      background: #000;
+      padding: 15px;
+      border: 1px solid #00ff00;
+      color: #0f0;
+      word-break: break-word;
+      white-space: pre-wrap;
+      text-shadow: 0 0 8px #00ff00;
+      border-radius: 5px;
+      min-height: 80px;
+      font-size: 1rem;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 50px;
+      font-size: 1rem;
+      color: #00ff00;
+      text-shadow: 0 0 8px #00ff00;
+    }
+
+    .footer span {
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal">
+    <h1>SHA-256 Hash Terminal</h1>
+
+    <label for="inputText">Type any text below to see its SHA-256 hash:</label>
+    <input type="text" id="inputText" placeholder="Example: w000zi" oninput="generateAnimatedHash()" />
+
+    <div id="hashOutput">⬆️ Enter some text to generate a hash ⬇️</div>
+
+    <div class="footer">
+      Powered by <span>w000zi</span>
+    </div>
+  </div>
+
+  <!-- Load CryptoJS Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+    let typingInterval;
+
+    function generateAnimatedHash() {
+      const input = document.getElementById("inputText").value;
+      const output = document.getElementById("hashOutput");
+
+      if (typingInterval) {
+        clearInterval(typingInterval);
+      }
+
+      if (input.trim() === "") {
+        output.textContent = "⬆️ Enter some text to generate a hash ⬇️";
+        return;
+      }
+
+      const hash = CryptoJS.SHA256(input).toString();
+      let index = 0;
+      output.textContent = "";
+
+      typingInterval = setInterval(() => {
+        if (index < hash.length) {
+          output.textContent += hash[index];
+          index++;
+        } else {
+          clearInterval(typingInterval);
+        }
+      }, 20);
+    }
+  </script>
+</body>
+</html>
 
