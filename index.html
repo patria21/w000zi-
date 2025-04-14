@@ -8,74 +8,114 @@
         body {
             display: flex;
             justify-content: center;
-            align-items: flex-start; /* Ubah dari center ke flex-start agar bisa scroll */
-            min-height: 100vh; /* Gunakan min-height agar konten bisa lebih panjang */
+            align-items: center;
+            height: 100vh; /* Tinggi tetap, tidak ada scroll */
             margin: 0;
             background-color: #0d0d0d;
             font-family: 'Courier New', Courier, monospace;
-            overflow-y: auto; /* Izinkan scroll vertikal */
+            overflow: hidden; /* Cegah scrolling */
         }
         .game-container {
-            text-align: center;
-            padding: 20px; /* Tambahkan padding untuk ruang di mobile */
-            max-width: 100%; /* Pastikan tidak melebihi lebar layar */
+            display: flex;
+            align-items: flex-start; /* Sejajarkan elemen ke atas */
+            gap: 20px; /* Jarak antara canvas dan ikon */
+            max-width: 100%;
             box-sizing: border-box;
+        }
+        .game-area {
+            text-align: center;
         }
         canvas {
             border: 3px solid #00ff00;
             background-color: #1a1a1a;
             box-shadow: 0 0 15px #00ff00;
-            max-width: 100%; /* Pastikan canvas tidak melebihi lebar layar */
-            height: auto; /* Pertahankan rasio aspek */
+            max-width: 100%;
+            height: auto;
+        }
+        .control-area {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .speaker-btn {
+            background: none;
+            border: none;
+            color: #00ff00;
+            font-size: 24px;
+            cursor: pointer;
+            text-shadow: 0 0 5px #00ff00;
+            padding: 10px;
+        }
+        .speaker-btn:hover {
+            color: #00cc00;
+        }
+        .touch-controls {
+            width: 100px;
+            height: 100px;
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            border-radius: 10px;
+            touch-action: none; /* Cegah scroll browser saat sentuh */
         }
         .score, .high-score, .level {
             margin-top: 10px;
-            font-size: 22px;
+            font-size: 18px;
             color: #00ff00;
             text-shadow: 0 0 5px #00ff00;
         }
         .powered-by {
             margin-top: 10px;
-            font-size: 16px;
+            font-size: 14px;
             color: #00ff00;
             text-shadow: 0 0 3px #00ff00;
-        }
-        .music-control {
-            margin-top: 10px;
-            padding: 10px 20px;
-            background-color: transparent;
-            border: 2px solid #00ff00;
-            color: #00ff00;
-            font-family: 'Courier New', Courier, monospace;
-            font-size: 16px;
-            cursor: pointer;
-            text-shadow: 0 0 3px #00ff00;
-        }
-        .music-control:hover {
-            background-color: rgba(0, 255, 0, 0.1);
         }
         @media (max-width: 600px) {
+            .game-container {
+                flex-direction: column; /* Tumpuk vertikal di mobile */
+                align-items: center;
+                gap: 10px;
+            }
             canvas {
-                width: 100%; /* Sesuaikan lebar canvas dengan layar */
-                max-width: 300px; /* Batas maksimum untuk menjaga proporsi */
+                width: 100%;
+                max-width: 280px; /* Kurangi sedikit untuk mobile */
+            }
+            .control-area {
+                flex-direction: row;
+                justify-content: center;
+                width: 100%;
+                height: auto;
+            }
+            .speaker-btn {
+                font-size: 20px;
+                padding: 5px;
+            }
+            .touch-controls {
+                width: 80px;
+                height: 80px;
             }
             .score, .high-score, .level {
-                font-size: 18px; /* Kurangi ukuran font di mobile */
+                font-size: 16px;
             }
-            .powered-by, .music-control {
-                font-size: 14px;
+            .powered-by {
+                font-size: 12px;
             }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <canvas id="tetris"></canvas>
-        <div class="score">Score: <span id="score">0</span></div>
-        <div class="high-score">High Score: <span id="high-score">0</span></div>
-        <div class="level">Level: <span id="level">1</span></div>
-        <div class="powered-by">Powered by W000zi</div>
-        <button class="music-control" id="music-control">Toggle Music</button>
+        <div class="game-area">
+            <canvas id="tetris"></canvas>
+            <div class="score">Score: <span id="score">0</span></div>
+            <div class="high-score">High Score: <span id="high-score">0</span></div>
+            <div class="level">Level: <span id="level">1</span></div>
+            <div class="powered-by">Powered by W000zi</div>
+        </div>
+        <div class="control-area">
+            <button class="speaker-btn" id="speaker-btn" title="Toggle Music">🔊</button>
+            <div class="touch-controls" id="touch-controls"></div>
+        </div>
         <audio id="background-music" loop>
             <source src="tetris-theme.mp3" type="audio/mpeg">
             Your browser does not support the audio element.
@@ -88,19 +128,19 @@
         const highScoreElement = document.getElementById('high-score');
         const levelElement = document.getElementById('level');
         const backgroundMusic = document.getElementById('background-music');
-        const musicControl = document.getElementById('music-control');
+        const speakerBtn = document.getElementById('speaker-btn');
+        const touchControls = document.getElementById('touch-controls');
 
-        // Atur ukuran canvas secara dinamis
+        // Atur ukuran canvas
         function resizeCanvas() {
-            const maxWidth = Math.min(window.innerWidth - 40, 300); // Maksimum 300px, dengan margin
+            const maxWidth = Math.min(window.innerWidth * 0.7, 300); // 70% lebar layar, max 300px
             canvas.width = maxWidth;
-            canvas.height = maxWidth * 2; // Rasmeskipunio 1:2
+            canvas.height = maxWidth * 2;
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
         // Skala untuk ukuran blok
-        const BLOCK_SIZE = canvas.width / 10;
         const BOARD_WIDTH = 10;
         const BOARD_HEIGHT = 20;
 
@@ -146,33 +186,28 @@
         function toggleMusic() {
             if (isMusicPlaying) {
                 backgroundMusic.pause();
-                musicControl.textContent = 'Play Music';
+                speakerBtn.innerHTML = '🔇'; // Ikon mute
             } else {
                 backgroundMusic.play().catch((e) => console.error("Failed to play music:", e));
-                musicControl.textContent = 'Mute Music';
+                speakerBtn.innerHTML = '🔊'; // Ikon speaker
             }
             isMusicPlaying = !isMusicPlaying;
         }
 
-        // Coba putar musik saat game dimulai
         backgroundMusic.volume = 0.5;
         backgroundMusic.play().then(() => {
             isMusicPlaying = true;
-            musicControl.textContent = 'Mute Music';
+            speakerBtn.innerHTML = '🔊';
         }).catch((e) => {
             console.log("Autoplay blocked:", e);
-            musicControl.textContent = 'Play Music';
+            speakerBtn.innerHTML = '🔇';
         });
 
-        // Tangani interaksi sentuh untuk memutar musik
         document.addEventListener('touchstart', () => {
-            if (!isMusicPlaying) {
-                toggleMusic();
-            }
+            if (!isMusicPlaying) toggleMusic();
         }, { once: true });
 
-        // Kontrol tombol musik
-        musicControl.addEventListener('click', toggleMusic);
+        speakerBtn.addEventListener('click', toggleMusic);
 
         // Membuat tetromino baru
         function createPiece() {
@@ -189,6 +224,7 @@
                 }
                 gameOver = true;
                 backgroundMusic.pause();
+                speakerBtn.innerHTML = '🔇';
             }
         }
 
@@ -256,15 +292,10 @@
 
         // Perbarui kecepatan permainan
         function updateGameSpeed() {
-            if (level <= 3) {
-                gameSpeed = 1000;
-            } else if (level <= 6) {
-                gameSpeed = 700;
-            } else if (level <= 9) {
-                gameSpeed = 500;
-            } else {
-                gameSpeed = 300;
-            }
+            if (level <= 3) gameSpeed = 1000;
+            else if (level <= 6) gameSpeed = 700;
+            else if (level <= 9) gameSpeed = 500;
+            else gameSpeed = 300;
         }
 
         // Putar piece
@@ -388,37 +419,52 @@
                 case ' ':
                     dropPiece();
                     break;
-                case 'm':
-                case 'M':
-                    toggleMusic();
-                    break;
             }
             draw();
         });
 
-        // Kontrol sentuh (opsional untuk mobile)
+        // Kontrol sentuh
         let touchStartX = null;
-        canvas.addEventListener('touchstart', (e) => {
+        let lastMoveTime = 0;
+        const MOVE_DELAY = 100; // Debounce 100ms
+        touchControls.addEventListener('touchstart', (e) => {
             e.preventDefault();
             touchStartX = e.touches[0].clientX;
         });
-        canvas.addEventListener('touchmove', (e) => {
+        touchControls.addEventListener('touchmove', (e) => {
             e.preventDefault();
             if (touchStartX === null) return;
+            const currentTime = Date.now();
+            if (currentTime - lastMoveTime < MOVE_DELAY) return;
+
             const touchX = e.touches[0].clientX;
             const diff = touchX - touchStartX;
-            if (Math.abs(diff) > 30) {
+            const sensitivity = canvas.width / 10; // Sesuaikan sensitivitas
+
+            if (Math.abs(diff) > sensitivity) {
                 if (diff > 0) movePiece(1, 0);
                 else movePiece(-1, 0);
+                lastMoveTime = currentTime;
                 touchStartX = touchX;
                 draw();
             }
         });
-        canvas.addEventListener('touchend', (e) => {
+        touchControls.addEventListener('touchend', (e) => {
             e.preventDefault();
-            rotatePiece();
-            draw();
+            const currentTime = Date.now();
+            if (currentTime - lastMoveTime > MOVE_DELAY) {
+                rotatePiece();
+                draw();
+            }
             touchStartX = null;
+        });
+
+        // Visual feedback untuk sentuhan
+        touchControls.addEventListener('touchstart', () => {
+            touchControls.style.background = 'rgba(0, 255, 0, 0.3)';
+        });
+        touchControls.addEventListener('touchend', () => {
+            touchControls.style.background = 'rgba(0, 255, 0, 0.1)';
         });
 
         // Mulai game
