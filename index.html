@@ -8,167 +8,74 @@
         body {
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start; /* Ubah dari center ke flex-start agar bisa scroll */
+            min-height: 100vh; /* Gunakan min-height agar konten bisa lebih panjang */
             margin: 0;
             background-color: #0d0d0d;
             font-family: 'Courier New', Courier, monospace;
-            overflow: hidden;
-            touch-action: none;
+            overflow-y: auto; /* Izinkan scroll vertikal */
         }
         .game-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-            max-width: 100%;
+            text-align: center;
+            padding: 20px; /* Tambahkan padding untuk ruang di mobile */
+            max-width: 100%; /* Pastikan tidak melebihi lebar layar */
             box-sizing: border-box;
         }
-        .game-area {
-            display: flex;
-            align-items: flex-start;
-            gap: 10px;
-        }
-        #tetris {
-            border: 2px solid #00ff00;
+        canvas {
+            border: 3px solid #00ff00;
             background-color: #1a1a1a;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        .control-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 10px;
-        }
-        .speaker-btn {
-            background: none;
-            border: none;
-            color: #00ff00;
-            font-size: 20px;
-            cursor: pointer;
-            text-shadow: 0 0 5px #00ff00;
-            padding: 5px;
-        }
-        .speaker-btn:hover {
-            color: #00cc00;
-        }
-        #next-piece {
-            border: 2px solid #00ff00;
-            background-color: #1a1a1a;
-            box-shadow: 0 0 8px #00ff00;
-        }
-        .touch-buttons {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            width: 120px;
-        }
-        .touch-btn {
-            background: rgba(0, 255, 0, 0.1);
-            border: 2px solid #00ff00;
-            color: #00ff00;
-            font-size: 16px;
-            padding: 8px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 5px;
-            user-select: none;
-            touch-action: none;
-        }
-        .touch-btn:active {
-            background: rgba(0, 255, 0, 0.3);
-        }
-        .touch-btn.empty {
-            border: none;
-            background: none;
+            box-shadow: 0 0 15px #00ff00;
+            max-width: 100%; /* Pastikan canvas tidak melebihi lebar layar */
+            height: auto; /* Pertahankan rasio aspek */
         }
         .score, .high-score, .level {
-            margin-top: 5px;
-            font-size: 14px;
+            margin-top: 10px;
+            font-size: 22px;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        .powered-by {
+            margin-top: 10px;
+            font-size: 16px;
             color: #00ff00;
             text-shadow: 0 0 3px #00ff00;
         }
-        .powered-by {
-            margin-top: 5px;
-            font-size: 10px;
+        .music-control {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: transparent;
+            border: 2px solid #00ff00;
             color: #00ff00;
-            text-shadow: 0 0 2px #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            cursor: pointer;
+            text-shadow: 0 0 3px #00ff00;
         }
-        @media (min-width: 600px) {
-            .game-container {
-                flex-direction: row;
-                align-items: flex-start;
-            }
-            .game-area {
-                flex-direction: column;
-                align-items: center;
-            }
-            #tetris {
-                max-width: 240px;
-            }
-            .control-area {
-                align-items: flex-start;
-            }
-            .speaker-btn {
-                font-size: 24px;
-            }
-            #next-piece {
-                width: 80px;
-                height: 80px;
-            }
-            .touch-buttons {
-                width: 150px;
-            }
-            .touch-btn {
-                font-size: 18px;
-                padding: 10px;
+        .music-control:hover {
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+        @media (max-width: 600px) {
+            canvas {
+                width: 100%; /* Sesuaikan lebar canvas dengan layar */
+                max-width: 300px; /* Batas maksimum untuk menjaga proporsi */
             }
             .score, .high-score, .level {
-                font-size: 16px;
+                font-size: 18px; /* Kurangi ukuran font di mobile */
             }
-            .powered-by {
-                font-size: 12px;
-            }
-        }
-        @media (max-width: 599px) {
-            #tetris {
-                max-width: 220px;
-            }
-            #next-piece {
-                width: 60px;
-                height: 60px;
-            }
-            .touch-buttons {
-                width: 100px;
-            }
-            .touch-btn {
+            .powered-by, .music-control {
                 font-size: 14px;
-                padding: 6px;
             }
         }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <div class="game-area">
-            <canvas id="tetris"></canvas>
-            <div class="score">Score: <span id="score">0</span></div>
-            <div class="high-score">High Score: <span id="high-score">0</span></div>
-            <div class="level">Level: <span id="level">1</span></div>
-            <div class="powered-by">Powered by W000zi</div>
-        </div>
-        <div class="control-area">
-            <button class="speaker-btn" id="speaker-btn" title="Toggle Music">🔊</button>
-            <canvas id="next-piece" width="60" height="60"></canvas>
-            <div class="touch-buttons">
-                <div class="touch-btn empty"></div>
-                <div class="touch-btn" id="rotate-btn">↻</div>
-                <div class="touch-btn empty"></div>
-                <div class="touch-btn" id="left-btn">←</div>
-                <div class="touch-btn" id="down-btn">↓</div>
-                <div class="touch-btn" id="right-btn">→</div>
-            </div>
-        </div>
+        <canvas id="tetris"></canvas>
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="high-score">High Score: <span id="high-score">0</span></div>
+        <div class="level">Level: <span id="level">1</span></div>
+        <div class="powered-by">Powered by W000zi</div>
+        <button class="music-control" id="music-control">Toggle Music</button>
         <audio id="background-music" loop>
             <source src="tetris-theme.mp3" type="audio/mpeg">
             Your browser does not support the audio element.
@@ -177,32 +84,27 @@
     <script>
         const canvas = document.getElementById('tetris');
         const ctx = canvas.getContext('2d');
-        const nextPieceCanvas = document.getElementById('next-piece');
-        const nextCtx = nextPieceCanvas.getContext('2d');
         const scoreElement = document.getElementById('score');
         const highScoreElement = document.getElementById('high-score');
         const levelElement = document.getElementById('level');
         const backgroundMusic = document.getElementById('background-music');
-        const speakerBtn = document.getElementById('speaker-btn');
-        const leftBtn = document.getElementById('left-btn');
-        const rightBtn = document.getElementById('right-btn');
-        const downBtn = document.getElementById('down-btn');
-        const rotateBtn = document.getElementById('rotate-btn');
+        const musicControl = document.getElementById('music-control');
 
-        // Atur ukuran canvas
+        // Atur ukuran canvas secara dinamis
         function resizeCanvas() {
-            const maxWidth = Math.min(window.innerWidth * 0.6, window.innerWidth < 600 ? 220 : 240);
+            const maxWidth = Math.min(window.innerWidth - 40, 300); // Maksimum 300px, dengan margin
             canvas.width = maxWidth;
-            canvas.height = maxWidth * 2;
-            draw();
-            drawNextPiece();
+            canvas.height = maxWidth * 2; // Rasmeskipunio 1:2
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
 
-        // Konstanta game
+        // Skala untuk ukuran blok
+        const BLOCK_SIZE = canvas.width / 10;
         const BOARD_WIDTH = 10;
         const BOARD_HEIGHT = 20;
+
+        // Warna neon
         const COLORS = [
             null,
             '#00ff00', // I
@@ -213,6 +115,8 @@
             '#00ff00', // J
             '#00ff00', // L
         ];
+
+        // Definisi tetromino
         const TETROMINOES = [
             [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], // I
             [[2, 2], [2, 2]], // O
@@ -223,14 +127,13 @@
             [[0, 0, 7], [7, 7, 7], [0, 0, 0]], // L
         ];
 
-        // State game
-        let board = Array(BOARD_HEIGHT).fill().map(() => Array(BOARD_WIDTH).fill(0));
+        // Inisialisasi board
+        let board = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(0));
         let score = 0;
         let highScore = localStorage.getItem('tetrisHighScore') || 0;
         let currentPiece = null;
         let currentX = 0;
         let currentY = 0;
-        let nextPiece = null;
         let gameOver = false;
         let level = 1;
         let gameSpeed = 1000;
@@ -238,36 +141,47 @@
         highScoreElement.textContent = highScore;
         levelElement.textContent = level;
 
-        // Musik
+        // Kontrol musik
         let isMusicPlaying = false;
         function toggleMusic() {
             if (isMusicPlaying) {
                 backgroundMusic.pause();
-                speakerBtn.innerHTML = '🔇';
+                musicControl.textContent = 'Play Music';
             } else {
-                backgroundMusic.play().catch(e => console.error("Music error:", e));
-                speakerBtn.innerHTML = '🔊';
+                backgroundMusic.play().catch((e) => console.error("Failed to play music:", e));
+                musicControl.textContent = 'Mute Music';
             }
             isMusicPlaying = !isMusicPlaying;
         }
 
+        // Coba putar musik saat game dimulai
         backgroundMusic.volume = 0.5;
-        document.addEventListener('pointerdown', () => {
-            if (!isMusicPlaying) toggleMusic();
-        }, { once: true });
-        speakerBtn.addEventListener('click', toggleMusic);
+        backgroundMusic.play().then(() => {
+            isMusicPlaying = true;
+            musicControl.textContent = 'Mute Music';
+        }).catch((e) => {
+            console.log("Autoplay blocked:", e);
+            musicControl.textContent = 'Play Music';
+        });
 
-        // Membuat piece
-        function createPiece() {
-            if (nextPiece === null) {
-                nextPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+        // Tangani interaksi sentuh untuk memutar musik
+        document.addEventListener('touchstart', () => {
+            if (!isMusicPlaying) {
+                toggleMusic();
             }
-            currentPiece = nextPiece;
-            nextPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+        }, { once: true });
+
+        // Kontrol tombol musik
+        musicControl.addEventListener('click', toggleMusic);
+
+        // Membuat tetromino baru
+        function createPiece() {
+            const type = Math.floor(Math.random() * TETROMINOES.length);
+            currentPiece = TETROMINOES[type];
             currentX = Math.floor((BOARD_WIDTH - currentPiece[0].length) / 2);
             currentY = 0;
 
-            if (collides()) {
+            if (collides(currentPiece, currentX, currentY)) {
                 if (score > highScore) {
                     highScore = score;
                     localStorage.setItem('tetrisHighScore', highScore);
@@ -275,45 +189,21 @@
                 }
                 gameOver = true;
                 backgroundMusic.pause();
-                speakerBtn.innerHTML = '🔇';
-            }
-            drawNextPiece();
-        }
-
-        // Gambar next piece
-        function drawNextPiece() {
-            nextCtx.fillStyle = '#1a1a1a';
-            nextCtx.fillRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
-            if (nextPiece) {
-                const blockSize = nextPieceCanvas.width / 4;
-                const offsetX = (nextPieceCanvas.width - nextPiece[0].length * blockSize) / 2;
-                const offsetY = (nextPieceCanvas.height - nextPiece.length * blockSize) / 2;
-                for (let py = 0; py < nextPiece.length; py++) {
-                    for (let px = 0; px < nextPiece[py].length; px++) {
-                        if (nextPiece[py][px]) {
-                            nextCtx.fillStyle = COLORS[nextPiece[py][px]];
-                            nextCtx.fillRect(offsetX + px * blockSize, offsetY + py * blockSize, blockSize - 2, blockSize - 2);
-                            nextCtx.strokeStyle = '#00ff00';
-                            nextCtx.lineWidth = 1;
-                            nextCtx.strokeRect(offsetX + px * blockSize, offsetY + py * blockSize, blockSize - 2, blockSize - 2);
-                        }
-                    }
-                }
             }
         }
 
         // Cek tabrakan
-        function collides(piece = currentPiece, x = currentX, y = currentY) {
+        function collides(piece, x, y) {
             for (let py = 0; py < piece.length; py++) {
                 for (let px = 0; px < piece[py].length; px++) {
-                    if (piece[py][px]) {
+                    if (piece[py][px] !== 0) {
                         const boardX = x + px;
                         const boardY = y + py;
                         if (
                             boardY >= BOARD_HEIGHT ||
                             boardX < 0 ||
                             boardX >= BOARD_WIDTH ||
-                            (boardY >= 0 && board[boardY][boardX])
+                            (boardY >= 0 && board[boardY][boardX] !== 0)
                         ) {
                             return true;
                         }
@@ -323,36 +213,38 @@
             return false;
         }
 
-        // Gabungkan piece
+        // Gabungkan piece ke board
         function mergePiece() {
             for (let py = 0; py < currentPiece.length; py++) {
                 for (let px = 0; px < currentPiece[py].length; px++) {
-                    if (currentPiece[py][px] && currentY + py >= 0) {
-                        board[currentY + py][currentX + px] = currentPiece[py][px];
+                    if (currentPiece[py][px] !== 0) {
+                        if (currentY + py >= 0) {
+                            board[currentY + py][currentX + px] = currentPiece[py][px];
+                        }
                     }
                 }
             }
         }
 
-        // Hapus baris
+        // Hapus baris penuh dan update level
         function clearLines() {
             let linesCleared = 0;
             for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
-                if (board[y].every(cell => cell)) {
+                if (board[y].every(cell => cell !== 0)) {
                     board.splice(y, 1);
                     board.unshift(Array(BOARD_WIDTH).fill(0));
                     linesCleared++;
                     y++;
                 }
             }
-            if (linesCleared) {
+            if (linesCleared > 0) {
                 score += linesCleared * 100;
                 scoreElement.textContent = score;
                 let newLevel = Math.floor(score / 1000) + 1;
                 if (newLevel !== level) {
                     level = newLevel;
                     levelElement.textContent = level;
-                    gameSpeed = Math.max(300, 1000 - (level - 1) * 200);
+                    updateGameSpeed();
                 }
                 if (score > highScore) {
                     highScore = score;
@@ -362,32 +254,47 @@
             }
         }
 
+        // Perbarui kecepatan permainan
+        function updateGameSpeed() {
+            if (level <= 3) {
+                gameSpeed = 1000;
+            } else if (level <= 6) {
+                gameSpeed = 700;
+            } else if (level <= 9) {
+                gameSpeed = 500;
+            } else {
+                gameSpeed = 300;
+            }
+        }
+
         // Putar piece
         function rotatePiece() {
-            const rotated = Array(currentPiece[0].length).fill().map(() => Array(currentPiece.length).fill(0));
+            const rotated = Array(currentPiece[0].length)
+                .fill()
+                .map(() => Array(currentPiece.length).fill(0));
             for (let y = 0; y < currentPiece.length; y++) {
                 for (let x = 0; x < currentPiece[y].length; x++) {
                     rotated[x][currentPiece.length - 1 - y] = currentPiece[y][x];
                 }
             }
-            if (!collides(rotated)) {
+            if (!collides(rotated, currentX, currentY)) {
                 currentPiece = rotated;
             }
-            draw();
         }
 
         // Gerakkan piece
         function movePiece(dx, dy) {
-            if (!collides(currentPiece, currentX + dx, currentY + dy)) {
-                currentX += dx;
-                currentY += dy;
-                draw();
+            const newX = currentX + dx;
+            const newY = currentY + dy;
+            if (!collides(currentPiece, newX, newY)) {
+                currentX = newX;
+                currentY = newY;
                 return true;
             }
             return false;
         }
 
-        // Jatuhkan piece
+        // Jatuhkan piece langsung ke bawah
         function dropPiece() {
             while (movePiece(0, 1)) {}
             mergePiece();
@@ -395,46 +302,60 @@
             createPiece();
         }
 
-        // Gambar board
+        // Gambar board dan piece
         function draw() {
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             const blockSize = canvas.width / BOARD_WIDTH;
             for (let y = 0; y < BOARD_HEIGHT; y++) {
                 for (let x = 0; x < BOARD_WIDTH; x++) {
-                    if (board[y][x]) {
+                    if (board[y][x] !== 0) {
                         ctx.fillStyle = COLORS[board[y][x]];
                         ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
                     }
                 }
             }
+
             if (currentPiece) {
                 for (let py = 0; py < currentPiece.length; py++) {
                     for (let px = 0; px < currentPiece[py].length; px++) {
-                        if (currentPiece[py][px]) {
+                        if (currentPiece[py][px] !== 0) {
                             ctx.fillStyle = COLORS[currentPiece[py][px]];
-                            ctx.fillRect((currentX + px) * blockSize, (currentY + py) * blockSize, blockSize, blockSize);
+                            ctx.fillRect(
+                                (currentX + px) * blockSize,
+                                (currentY + py) * blockSize,
+                                blockSize,
+                                blockSize
+                            );
                             ctx.strokeStyle = '#00ff00';
-                            ctx.lineWidth = 1;
-                            ctx.strokeRect((currentX + px) * blockSize, (currentY + py) * blockSize, blockSize, blockSize);
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(
+                                (currentX + px) * blockSize,
+                                (currentY + py) * blockSize,
+                                blockSize,
+                                blockSize
+                            );
                         }
                     }
                 }
             }
+        }
+
+        // Update game
+        let lastUpdate = null;
+        function update(timestamp) {
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#00ff00';
-                ctx.font = `${canvas.width / 15}px Courier New`;
+                ctx.font = `${canvas.width / 10}px Courier New`;
                 ctx.textAlign = 'center';
                 ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + canvas.width / 15);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + canvas.width / 10);
+                return;
             }
-        }
 
-        // Update game
-        function update(timestamp) {
-            if (gameOver) return;
             if (!lastUpdate || timestamp - lastUpdate >= gameSpeed) {
                 if (!movePiece(0, 1)) {
                     mergePiece();
@@ -443,61 +364,65 @@
                 }
                 lastUpdate = timestamp;
             }
+
+            draw();
             requestAnimationFrame(update);
         }
-        let lastUpdate = null;
 
         // Kontrol keyboard
-        document.addEventListener('keydown', e => {
+        document.addEventListener('keydown', (e) => {
             if (gameOver) return;
             switch (e.key) {
-                case 'ArrowLeft': movePiece(-1, 0); break;
-                case 'ArrowRight': movePiece(1, 0); break;
-                case 'ArrowDown': movePiece(0, 1); break;
-                case 'ArrowUp': rotatePiece(); break;
-                case ' ': dropPiece(); break;
+                case 'ArrowLeft':
+                    movePiece(-1, 0);
+                    break;
+                case 'ArrowRight':
+                    movePiece(1, 0);
+                    break;
+                case 'ArrowDown':
+                    movePiece(0, 1);
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    break;
+                case ' ':
+                    dropPiece();
+                    break;
+                case 'm':
+                case 'M':
+                    toggleMusic();
+                    break;
             }
+            draw();
         });
 
-        // Kontrol sentuh
-        function addTouchListener(btn, action, repeat = false) {
-            let isPressed = false;
-            let intervalId = null;
-            btn.addEventListener('pointerdown', e => {
-                e.preventDefault();
-                if (gameOver || isPressed) return;
-                isPressed = true;
-                console.log(`${btn.id} pressed`);
-                action();
-                if (repeat) {
-                    intervalId = setInterval(action, 100);
-                }
-            });
-            btn.addEventListener('pointerup', e => {
-                e.preventDefault();
-                isPressed = false;
-                if (intervalId) clearInterval(intervalId);
-            });
-            btn.addEventListener('pointerleave', e => {
-                e.preventDefault();
-                isPressed = false;
-                if (intervalId) clearInterval(intervalId);
-            });
-            btn.addEventListener('pointercancel', e => {
-                e.preventDefault();
-                isPressed = false;
-                if (intervalId) clearInterval(intervalId);
-            });
-        }
-
-        addTouchListener(leftBtn, () => movePiece(-1, 0), true);
-        addTouchListener(rightBtn, () => movePiece(1, 0), true);
-        addTouchListener(downBtn, () => movePiece(0, 1), true);
-        addTouchListener(rotateBtn, rotatePiece);
+        // Kontrol sentuh (opsional untuk mobile)
+        let touchStartX = null;
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (touchStartX === null) return;
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            if (Math.abs(diff) > 30) {
+                if (diff > 0) movePiece(1, 0);
+                else movePiece(-1, 0);
+                touchStartX = touchX;
+                draw();
+            }
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            rotatePiece();
+            draw();
+            touchStartX = null;
+        });
 
         // Mulai game
         createPiece();
-        draw();
         requestAnimationFrame(update);
     </script>
 </body>
