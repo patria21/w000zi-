@@ -1,115 +1,365 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SHA-256 Hash Terminal</title>
-  <style>
-    body {
-      background-color: #000;
-      color: #00ff00;
-      font-family: 'Courier New', Courier, monospace;
-      margin: 0;
-      padding: 0;
-    }
-
-    .terminal {
-      padding: 2rem;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-
-    h1 {
-      color: #00ff00;
-      text-align: center;
-      text-shadow: 0 0 10px #00ff00;
-    }
-
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 20px;
-      background: #000;
-      border: 1px solid #00ff00;
-      color: #00ff00;
-      font-size: 1.1rem;
-      font-family: inherit;
-      border-radius: 5px;
-    }
-
-    #hashOutput {
-      margin-top: 20px;
-      background: #000;
-      padding: 15px;
-      border: 1px solid #00ff00;
-      color: #0f0;
-      word-break: break-word;
-      white-space: pre-wrap;
-      text-shadow: 0 0 8px #00ff00;
-      border-radius: 5px;
-      min-height: 80px;
-      font-size: 1rem;
-    }
-
-    .footer {
-      text-align: center;
-      margin-top: 50px;
-      font-size: 1rem;
-      color: #00ff00;
-      text-shadow: 0 0 8px #00ff00;
-    }
-
-    .footer span {
-      font-weight: bold;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris by W000zi</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #0d0d0d;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        .game-container {
+            text-align: center;
+        }
+        canvas {
+            border: 3px solid #00ff00;
+            background-color: #1a1a1a;
+            box-shadow: 0 0 15px #00ff00;
+        }
+        .score, .high-score, .level {
+            margin-top: 10px;
+            font-size: 22px;
+            color: #00ff00;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        .powered-by {
+            margin-top: 10px;
+            font-size: 16px;
+            color: #00ff00;
+            text-shadow: 0 0 3px #00ff00;
+        }
+    </style>
 </head>
 <body>
-  <div class="terminal">
-    <h1>SHA-256 Hash Terminal</h1>
-
-    <label for="inputText">Type any text below to see its SHA-256 hash:</label>
-    <input type="text" id="inputText" placeholder="Example: w000zi" oninput="generateAnimatedHash()" />
-
-    <div id="hashOutput">⬆️ Enter some text to generate a hash ⬇️</div>
-
-    <div class="footer">
-      Powered by <span>w000zi</span>
+    <div class="game-container">
+        <canvas id="tetris" width="300" height="600"></canvas>
+        <div class="score">Score: <span id="score">0</span></div>
+        <div class="high-score">High Score: <span id="high-score">0</span></div>
+        <div class="level">Level: <span id="level">1</span></div>
+        <div class="powered-by">Powered by W000zi</div>
+        <audio id="background-music" loop>
+            <source src="tetris-theme.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
     </div>
-  </div>
+    <script>
+        const canvas = document.getElementById('tetris');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score');
+        const levelElement = document.getElementById('level');
+        const backgroundMusic = document.getElementById('background-music');
 
-  <!-- Load CryptoJS Library -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script>
-    let typingInterval;
+        // Skala untuk ukuran blok
+        const BLOCK_SIZE = 30;
+        const BOARD_WIDTH = 10;
+        const BOARD_HEIGHT = 20;
 
-    function generateAnimatedHash() {
-      const input = document.getElementById("inputText").value;
-      const output = document.getElementById("hashOutput");
+        // Warna neon
+        const COLORS = [
+            null, // 0: Kosong
+            '#00ff00', // 1: I
+            '#00ff00', // 2: O
+            '#00ff00', // 3: T
+            '#00ff00', // 4: S
+            '#00ff00', // 5: Z
+            '#00ff00', // 6: J
+            '#00ff00', // 7: L
+        ];
 
-      if (typingInterval) {
-        clearInterval(typingInterval);
-      }
+        // Definisi tetromino
+        const TETROMINOES = [
+            [ // I
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ],
+            [ // O
+                [2, 2],
+                [2, 2],
+            ],
+            [ // T
+                [0, 3, 0],
+                [3, 3, 3],
+                [0, 0, 0],
+            ],
+            [ // S
+                [0, 4, 4],
+                [4, 4, 0],
+                [0, 0, 0],
+            ],
+            [ // Z
+                [5, 5, 0],
+                [0, 5, 5],
+                [0, 0, 0],
+            ],
+            [ // J
+                [6, 0, 0],
+                [6, 6, 6],
+                [0, 0, 0],
+            ],
+            [ // L
+                [0, 0, 7],
+                [7, 7, 7],
+                [0, 0, 0],
+            ],
+        ];
 
-      if (input.trim() === "") {
-        output.textContent = "⬆️ Enter some text to generate a hash ⬇️";
-        return;
-      }
+        // Inisialisasi board
+        let board = Array.from({ length: BOARD_HEIGHT }, () => Array(BOARD_WIDTH).fill(0));
+        let score = 0;
+        let highScore = localStorage.getItem('tetrisHighScore') || 0;
+        let currentPiece = null;
+        let currentX = 0;
+        let currentY = 0;
+        let gameOver = false;
+        let level = 1;
+        let gameSpeed = 1000; // Kecepatan awal (ms)
 
-      const hash = CryptoJS.SHA256(input).toString();
-      let index = 0;
-      output.textContent = "";
+        // Tampilkan high score dan level awal
+        highScoreElement.textContent = highScore;
+        levelElement.textContent = level;
 
-      typingInterval = setInterval(() => {
-        if (index < hash.length) {
-          output.textContent += hash[index];
-          index++;
-        } else {
-          clearInterval(typingInterval);
+        // Mainkan backsound
+        backgroundMusic.volume = 0.5;
+        backgroundMusic.play().catch((e) => {
+            console.log("Autoplay blocked:", e);
+            document.addEventListener('keydown', () => {
+                backgroundMusic.play();
+            }, { once: true });
+        });
+
+        // Membuat tetromino baru
+        function createPiece() {
+            const type = Math.floor(Math.random() * TETROMINOES.length);
+            currentPiece = TETROMINOES[type];
+            currentX = Math.floor((BOARD_WIDTH - currentPiece[0].length) / 2);
+            currentY = 0;
+
+            if (collides(currentPiece, currentX, currentY)) {
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('tetrisHighScore', highScore);
+                    highScoreElement.textContent = highScore;
+                }
+                gameOver = true;
+                backgroundMusic.pause();
+            }
         }
-      }, 20);
-    }
-  </script>
+
+        // Cek tabrakan
+        function collides(piece, x, y) {
+            for (let py = 0; py < piece.length; py++) {
+                for (let px = 0; px < piece[py].length; px++) {
+                    if (piece[py][px] !== 0) {
+                        const boardX = x + px;
+                        const boardY = y + py;
+                        if (
+                            boardY >= BOARD_HEIGHT ||
+                            boardX < 0 ||
+                            boardX >= BOARD_WIDTH ||
+                            (boardY >= 0 && board[boardY][boardX] !== 0)
+                        ) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Gabungkan piece ke board
+        function mergePiece() {
+            for (let py = 0; py < currentPiece.length; py++) {
+                for (let px = 0; px < currentPiece[py].length; px++) {
+                    if (currentPiece[py][px] !== 0) {
+                        if (currentY + py >= 0) {
+                            board[currentY + py][currentX + px] = currentPiece[py][px];
+                        }
+                    }
+                }
+            }
+        }
+
+        // Hapus baris penuh dan update level
+        function clearLines() {
+            let linesCleared = 0;
+            for (let y = BOARD_HEIGHT - 1; y >= 0; y--) {
+                if (board[y].every(cell => cell !== 0)) {
+                    board.splice(y, 1);
+                    board.unshift(Array(BOARD_WIDTH).fill(0));
+                    linesCleared++;
+                    y++;
+                }
+            }
+            if (linesCleared > 0) {
+                score += linesCleared * 100;
+                scoreElement.textContent = score;
+                let newLevel = Math.floor(score / 1000) + 1;
+                if (newLevel !== level) {
+                    level = newLevel;
+                    levelElement.textContent = level;
+                    updateGameSpeed();
+                }
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem('tetrisHighScore', highScore);
+                    highScoreElement.textContent = highScore;
+                }
+            }
+        }
+
+        // Perbarui kecepatan permainan
+        function updateGameSpeed() {
+            if (level <= 3) {
+                gameSpeed = 1000; // Level 1-3: 1 detik
+            } else if (level <= 6) {
+                gameSpeed = 700; // Level 4-6: 0.7 detik
+            } else if (level <= 9) {
+                gameSpeed = 500; // Level 7-9: 0.5 detik
+            } else {
+                gameSpeed = 300; // Level 10+: 0.3 detik
+            }
+        }
+
+        // Putar piece
+        function rotatePiece() {
+            const rotated = Array(currentPiece[0].length)
+                .fill()
+                .map(() => Array(currentPiece.length).fill(0));
+            for (let y = 0; y < currentPiece.length; y++) {
+                for (let x = 0; x < currentPiece[y].length; x++) {
+                    rotated[x][currentPiece.length - 1 - y] = currentPiece[y][x];
+                }
+            }
+            if (!collides(rotated, currentX, currentY)) {
+                currentPiece = rotated;
+            }
+        }
+
+        // Gerakkan piece
+        function movePiece(dx, dy) {
+            const newX = currentX + dx;
+            const newY = currentY + dy;
+            if (!collides(currentPiece, newX, newY)) {
+                currentX = newX;
+                currentY = newY;
+                return true;
+            }
+            return false;
+        }
+
+        // Jatuhkan piece langsung ke bawah
+        function dropPiece() {
+            while (movePiece(0, 1)) {}
+            mergePiece();
+            clearLines();
+            createPiece();
+        }
+
+        // Gambar board dan piece
+        function draw() {
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            for (let y = 0; y < BOARD_HEIGHT; y++) {
+                for (let x = 0; x < BOARD_WIDTH; x++) {
+                    if (board[y][x] !== 0) {
+                        ctx.fillStyle = COLORS[board[y][x]];
+                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                    }
+                }
+            }
+
+            if (currentPiece) {
+                for (let py = 0; py < currentPiece.length; py++) {
+                    for (let px = 0; px < currentPiece[py].length; px++) {
+                        if (currentPiece[py][px] !== 0) {
+                            ctx.fillStyle = COLORS[currentPiece[py][px]];
+                            ctx.fillRect(
+                                (currentX + px) * BLOCK_SIZE,
+                                (currentY + py) * BLOCK_SIZE,
+                                BLOCK_SIZE,
+                                BLOCK_SIZE
+                            );
+                            ctx.strokeStyle = '#00ff00';
+                            ctx.lineWidth = 2;
+                            ctx.strokeRect(
+                                (currentX + px) * BLOCK_SIZE,
+                                (currentY + py) * BLOCK_SIZE,
+                                BLOCK_SIZE,
+                                BLOCK_SIZE
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update game
+        let lastUpdate = null;
+        function update(timestamp) {
+            if (gameOver) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00ff00';
+                ctx.font = '30px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+                return;
+            }
+
+            if (!lastUpdate || timestamp - lastUpdate >= gameSpeed) {
+                if (!movePiece(0, 1)) {
+                    mergePiece();
+                    clearLines();
+                    createPiece();
+                }
+                lastUpdate = timestamp;
+            }
+
+            draw();
+            requestAnimationFrame(update);
+        }
+
+        // Kontrol keyboard
+        document.addEventListener('keydown', (e) => {
+            if (gameOver) return;
+            switch (e.key) {
+                case 'ArrowLeft':
+                    movePiece(-1, 0);
+                    break;
+                case 'ArrowRight':
+                    movePiece(1, 0);
+                    break;
+                case 'ArrowDown':
+                    movePiece(0, 1);
+                    break;
+                case 'ArrowUp':
+                    rotatePiece();
+                    break;
+                case ' ':
+                    dropPiece();
+                    break;
+                case 'm':
+                case 'M':
+                    backgroundMusic.muted = !backgroundMusic.muted;
+                    break;
+            }
+            draw();
+        });
+
+        // Mulai game
+        createPiece();
+        requestAnimationFrame(update);
+    </script>
 </body>
 </html>
-
