@@ -9,23 +9,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Tinggi tetap, tidak ada scroll */
+            height: 100vh;
             margin: 0;
             background-color: #0d0d0d;
             font-family: 'Courier New', Courier, monospace;
-            overflow: hidden; /* Cegah scrolling */
+            overflow: hidden;
+            touch-action: none; /* Cegah scroll browser */
         }
         .game-container {
             display: flex;
-            align-items: flex-start; /* Sejajarkan elemen ke atas */
-            gap: 20px; /* Jarak antara canvas dan ikon */
+            align-items: flex-start;
+            gap: 15px;
             max-width: 100%;
             box-sizing: border-box;
         }
         .game-area {
             text-align: center;
         }
-        canvas {
+        #tetris {
             border: 3px solid #00ff00;
             background-color: #1a1a1a;
             box-shadow: 0 0 15px #00ff00;
@@ -35,8 +36,8 @@
         .control-area {
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
+            align-items: center;
+            gap: 10px;
         }
         .speaker-btn {
             background: none;
@@ -50,55 +51,88 @@
         .speaker-btn:hover {
             color: #00cc00;
         }
-        .touch-controls {
-            width: 100px;
-            height: 100px;
+        #next-piece {
+            border: 2px solid #00ff00;
+            background-color: #1a1a1a;
+            box-shadow: 0 0 10px #00ff00;
+        }
+        .touch-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 150px;
+            touch-action: none;
+        }
+        .touch-btn {
             background: rgba(0, 255, 0, 0.1);
             border: 2px solid #00ff00;
-            border-radius: 10px;
-            touch-action: none; /* Cegah scroll browser saat sentuh */
+            color: #00ff00;
+            font-size: 18px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 5px;
+            user-select: none;
+            touch-action: none;
+        }
+        .touch-btn:active {
+            background: rgba(0, 255, 0, 0.3);
+        }
+        .touch-btn.empty {
+            border: none;
+            background: none;
         }
         .score, .high-score, .level {
-            margin-top: 10px;
-            font-size: 18px;
+            margin-top: 8px;
+            font-size: 16px;
             color: #00ff00;
             text-shadow: 0 0 5px #00ff00;
         }
         .powered-by {
-            margin-top: 10px;
-            font-size: 14px;
+            margin-top: 8px;
+            font-size: 12px;
             color: #00ff00;
             text-shadow: 0 0 3px #00ff00;
         }
         @media (max-width: 600px) {
             .game-container {
-                flex-direction: column; /* Tumpuk vertikal di mobile */
+                flex-direction: column;
                 align-items: center;
                 gap: 10px;
             }
-            canvas {
+            #tetris {
                 width: 100%;
-                max-width: 280px; /* Kurangi sedikit untuk mobile */
+                max-width: 260px; /* Diperkecil untuk mobile */
             }
             .control-area {
                 flex-direction: row;
                 justify-content: center;
+                flex-wrap: wrap;
                 width: 100%;
-                height: auto;
+                gap: 12px;
             }
             .speaker-btn {
                 font-size: 20px;
                 padding: 5px;
             }
-            .touch-controls {
-                width: 80px;
-                height: 80px;
+            #next-piece {
+                width: 60px;
+                height: 60px;
+            }
+            .touch-buttons {
+                width: 120px;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .touch-btn {
+                font-size: 16px;
+                padding: 8px;
             }
             .score, .high-score, .level {
-                font-size: 16px;
+                font-size: 14px;
             }
             .powered-by {
-                font-size: 12px;
+                font-size: 10px;
             }
         }
     </style>
@@ -114,7 +148,15 @@
         </div>
         <div class="control-area">
             <button class="speaker-btn" id="speaker-btn" title="Toggle Music">🔊</button>
-            <div class="touch-controls" id="touch-controls"></div>
+            <canvas id="next-piece" width="80" height="80"></canvas>
+            <div class="touch-buttons">
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="rotate-btn">↻</div>
+                <div class="touch-btn empty"></div>
+                <div class="touch-btn" id="left-btn">←</div>
+                <div class="touch-btn" id="down-btn">↓</div>
+                <div class="touch-btn" id="right-btn">→</div>
+            </div>
         </div>
         <audio id="background-music" loop>
             <source src="tetris-theme.mp3" type="audio/mpeg">
@@ -124,18 +166,31 @@
     <script>
         const canvas = document.getElementById('tetris');
         const ctx = canvas.getContext('2d');
+        const nextPieceCanvas = document.getElementById('next-piece');
+        const nextCtx = nextPieceCanvas.getContext('2d');
         const scoreElement = document.getElementById('score');
         const highScoreElement = document.getElementById('high-score');
         const levelElement = document.getElementById('level');
         const backgroundMusic = document.getElementById('background-music');
         const speakerBtn = document.getElementById('speaker-btn');
-        const touchControls = document.getElementById('touch-controls');
+        const leftBtn = document.getElementById('left-btn');
+        const rightBtn = document.getElementById('right-btn');
+        const downBtn = document.getElementById('down-btn');
+        const rotateBtn = document.getElementById('rotate-btn');
 
         // Atur ukuran canvas
         function resizeCanvas() {
-            const maxWidth = Math.min(window.innerWidth * 0.7, 300); // 70% lebar layar, max 300px
+            const maxWidth = Math.min(window.innerWidth * 0.65, 260);
             canvas.width = maxWidth;
             canvas.height = maxWidth * 2;
+            if (window.innerWidth <= 600) {
+                nextPieceCanvas.width = 60;
+                nextPieceCanvas.height = 60;
+            } else {
+                nextPieceCanvas.width = 80;
+                nextPieceCanvas.height = 80;
+            }
+            drawNextPiece();
         }
         resizeCanvas();
         window.addEventListener('resize', resizeCanvas);
@@ -177,6 +232,7 @@
         let gameOver = false;
         let level = 1;
         let gameSpeed = 1000;
+        let nextPiece = null;
 
         highScoreElement.textContent = highScore;
         levelElement.textContent = level;
@@ -186,10 +242,10 @@
         function toggleMusic() {
             if (isMusicPlaying) {
                 backgroundMusic.pause();
-                speakerBtn.innerHTML = '🔇'; // Ikon mute
+                speakerBtn.innerHTML = '🔇';
             } else {
                 backgroundMusic.play().catch((e) => console.error("Failed to play music:", e));
-                speakerBtn.innerHTML = '🔊'; // Ikon speaker
+                speakerBtn.innerHTML = '🔊';
             }
             isMusicPlaying = !isMusicPlaying;
         }
@@ -203,7 +259,7 @@
             speakerBtn.innerHTML = '🔇';
         });
 
-        document.addEventListener('touchstart', () => {
+        document.addEventListener('pointerdown', () => {
             if (!isMusicPlaying) toggleMusic();
         }, { once: true });
 
@@ -211,8 +267,11 @@
 
         // Membuat tetromino baru
         function createPiece() {
-            const type = Math.floor(Math.random() * TETROMINOES.length);
-            currentPiece = TETROMINOES[type];
+            if (nextPiece === null) {
+                nextPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+            }
+            currentPiece = nextPiece;
+            nextPiece = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
             currentX = Math.floor((BOARD_WIDTH - currentPiece[0].length) / 2);
             currentY = 0;
 
@@ -225,6 +284,41 @@
                 gameOver = true;
                 backgroundMusic.pause();
                 speakerBtn.innerHTML = '🔇';
+            }
+            drawNextPiece();
+        }
+
+        // Gambar next piece
+        function drawNextPiece() {
+            nextCtx.fillStyle = '#1a1a1a';
+            nextCtx.fillRect(0, 0, nextPieceCanvas.width, nextPieceCanvas.height);
+
+            if (nextPiece) {
+                const blockSize = nextPieceCanvas.width / 4;
+                const offsetX = (nextPieceCanvas.width - nextPiece[0].length * blockSize) / 2;
+                const offsetY = (nextPieceCanvas.height - nextPiece.length * blockSize) / 2;
+
+                for (let py = 0; py < nextPiece.length; py++) {
+                    for (let px = 0; px < nextPiece[py].length; px++) {
+                        if (nextPiece[py][px] !== 0) {
+                            nextCtx.fillStyle = COLORS[nextPiece[py][px]];
+                            nextCtx.fillRect(
+                                offsetX + px * blockSize,
+                                offsetY + py * blockSize,
+                                blockSize - 2,
+                                blockSize - 2
+                            );
+                            nextCtx.strokeStyle = '#00ff00';
+                            nextCtx.lineWidth = 1;
+                            nextCtx.strokeRect(
+                                offsetX + px * blockSize,
+                                offsetY + py * blockSize,
+                                blockSize - 2,
+                                blockSize - 2
+                            );
+                        }
+                    }
+                }
             }
         }
 
@@ -311,6 +405,7 @@
             if (!collides(rotated, currentX, currentY)) {
                 currentPiece = rotated;
             }
+            draw();
         }
 
         // Gerakkan piece
@@ -320,6 +415,7 @@
             if (!collides(currentPiece, newX, newY)) {
                 currentX = newX;
                 currentY = newY;
+                draw();
                 return true;
             }
             return false;
@@ -331,6 +427,7 @@
             mergePiece();
             clearLines();
             createPiece();
+            draw();
         }
 
         // Gambar board dan piece
@@ -380,10 +477,10 @@
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#00ff00';
-                ctx.font = `${canvas.width / 10}px Courier New`;
+                ctx.font = `${canvas.width / 12}px Courier New`;
                 ctx.textAlign = 'center';
                 ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + canvas.width / 10);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + canvas.width / 12);
                 return;
             }
 
@@ -396,7 +493,6 @@
                 lastUpdate = timestamp;
             }
 
-            draw();
             requestAnimationFrame(update);
         }
 
@@ -420,55 +516,49 @@
                     dropPiece();
                     break;
             }
-            draw();
         });
 
         // Kontrol sentuh
-        let touchStartX = null;
-        let lastMoveTime = 0;
-        const MOVE_DELAY = 100; // Debounce 100ms
-        touchControls.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            touchStartX = e.touches[0].clientX;
-        });
-        touchControls.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if (touchStartX === null) return;
-            const currentTime = Date.now();
-            if (currentTime - lastMoveTime < MOVE_DELAY) return;
+        function addTouchListener(btn, action) {
+            let isPressed = false;
+            let intervalId = null;
 
-            const touchX = e.touches[0].clientX;
-            const diff = touchX - touchStartX;
-            const sensitivity = canvas.width / 10; // Sesuaikan sensitivitas
+            btn.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                if (gameOver || isPressed) return;
+                isPressed = true;
+                console.log(`${btn.id} pressed`); // Debugging
+                action();
+                intervalId = setInterval(action, 150); // Ulangi setiap 150ms
+            });
 
-            if (Math.abs(diff) > sensitivity) {
-                if (diff > 0) movePiece(1, 0);
-                else movePiece(-1, 0);
-                lastMoveTime = currentTime;
-                touchStartX = touchX;
-                draw();
-            }
-        });
-        touchControls.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            const currentTime = Date.now();
-            if (currentTime - lastMoveTime > MOVE_DELAY) {
-                rotatePiece();
-                draw();
-            }
-            touchStartX = null;
-        });
+            btn.addEventListener('pointerup', (e) => {
+                e.preventDefault();
+                isPressed = false;
+                clearInterval(intervalId);
+            });
 
-        // Visual feedback untuk sentuhan
-        touchControls.addEventListener('touchstart', () => {
-            touchControls.style.background = 'rgba(0, 255, 0, 0.3)';
-        });
-        touchControls.addEventListener('touchend', () => {
-            touchControls.style.background = 'rgba(0, 255, 0, 0.1)';
-        });
+            btn.addEventListener('pointerleave', (e) => {
+                e.preventDefault();
+                isPressed = false;
+                clearInterval(intervalId);
+            });
+
+            btn.addEventListener('pointercancel', (e) => {
+                e.preventDefault();
+                isPressed = false;
+                clearInterval(intervalId);
+            });
+        }
+
+        addTouchListener(leftBtn, () => movePiece(-1, 0));
+        addTouchListener(rightBtn, () => movePiece(1, 0));
+        addTouchListener(downBtn, () => movePiece(0, 1));
+        addTouchListener(rotateBtn, rotatePiece);
 
         // Mulai game
         createPiece();
+        draw();
         requestAnimationFrame(update);
     </script>
 </body>
