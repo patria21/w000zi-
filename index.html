@@ -2,25 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Tetris by W000zi</title>
     <style>
         body {
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
+            align-items: flex-start; /* Ubah dari center ke flex-start agar bisa scroll */
+            min-height: 100vh; /* Gunakan min-height agar konten bisa lebih panjang */
             margin: 0;
             background-color: #0d0d0d;
             font-family: 'Courier New', Courier, monospace;
+            overflow-y: auto; /* Izinkan scroll vertikal */
         }
         .game-container {
             text-align: center;
+            padding: 20px; /* Tambahkan padding untuk ruang di mobile */
+            max-width: 100%; /* Pastikan tidak melebihi lebar layar */
+            box-sizing: border-box;
         }
         canvas {
             border: 3px solid #00ff00;
             background-color: #1a1a1a;
             box-shadow: 0 0 15px #00ff00;
+            max-width: 100%; /* Pastikan canvas tidak melebihi lebar layar */
+            height: auto; /* Pertahankan rasio aspek */
         }
         .score, .high-score, .level {
             margin-top: 10px;
@@ -34,15 +40,42 @@
             color: #00ff00;
             text-shadow: 0 0 3px #00ff00;
         }
+        .music-control {
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: transparent;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 16px;
+            cursor: pointer;
+            text-shadow: 0 0 3px #00ff00;
+        }
+        .music-control:hover {
+            background-color: rgba(0, 255, 0, 0.1);
+        }
+        @media (max-width: 600px) {
+            canvas {
+                width: 100%; /* Sesuaikan lebar canvas dengan layar */
+                max-width: 300px; /* Batas maksimum untuk menjaga proporsi */
+            }
+            .score, .high-score, .level {
+                font-size: 18px; /* Kurangi ukuran font di mobile */
+            }
+            .powered-by, .music-control {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="game-container">
-        <canvas id="tetris" width="300" height="600"></canvas>
+        <canvas id="tetris"></canvas>
         <div class="score">Score: <span id="score">0</span></div>
         <div class="high-score">High Score: <span id="high-score">0</span></div>
         <div class="level">Level: <span id="level">1</span></div>
         <div class="powered-by">Powered by W000zi</div>
+        <button class="music-control" id="music-control">Toggle Music</button>
         <audio id="background-music" loop>
             <source src="tetris-theme.mp3" type="audio/mpeg">
             Your browser does not support the audio element.
@@ -55,61 +88,43 @@
         const highScoreElement = document.getElementById('high-score');
         const levelElement = document.getElementById('level');
         const backgroundMusic = document.getElementById('background-music');
+        const musicControl = document.getElementById('music-control');
+
+        // Atur ukuran canvas secara dinamis
+        function resizeCanvas() {
+            const maxWidth = Math.min(window.innerWidth - 40, 300); // Maksimum 300px, dengan margin
+            canvas.width = maxWidth;
+            canvas.height = maxWidth * 2; // Rasmeskipunio 1:2
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
 
         // Skala untuk ukuran blok
-        const BLOCK_SIZE = 30;
+        const BLOCK_SIZE = canvas.width / 10;
         const BOARD_WIDTH = 10;
         const BOARD_HEIGHT = 20;
 
         // Warna neon
         const COLORS = [
-            null, // 0: Kosong
-            '#00ff00', // 1: I
-            '#00ff00', // 2: O
-            '#00ff00', // 3: T
-            '#00ff00', // 4: S
-            '#00ff00', // 5: Z
-            '#00ff00', // 6: J
-            '#00ff00', // 7: L
+            null,
+            '#00ff00', // I
+            '#00ff00', // O
+            '#00ff00', // T
+            '#00ff00', // S
+            '#00ff00', // Z
+            '#00ff00', // J
+            '#00ff00', // L
         ];
 
         // Definisi tetromino
         const TETROMINOES = [
-            [ // I
-                [0, 0, 0, 0],
-                [1, 1, 1, 1],
-                [0, 0, 0, 0],
-                [0, 0, 0, 0],
-            ],
-            [ // O
-                [2, 2],
-                [2, 2],
-            ],
-            [ // T
-                [0, 3, 0],
-                [3, 3, 3],
-                [0, 0, 0],
-            ],
-            [ // S
-                [0, 4, 4],
-                [4, 4, 0],
-                [0, 0, 0],
-            ],
-            [ // Z
-                [5, 5, 0],
-                [0, 5, 5],
-                [0, 0, 0],
-            ],
-            [ // J
-                [6, 0, 0],
-                [6, 6, 6],
-                [0, 0, 0],
-            ],
-            [ // L
-                [0, 0, 7],
-                [7, 7, 7],
-                [0, 0, 0],
-            ],
+            [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]], // I
+            [[2, 2], [2, 2]], // O
+            [[0, 3, 0], [3, 3, 3], [0, 0, 0]], // T
+            [[0, 4, 4], [4, 4, 0], [0, 0, 0]], // S
+            [[5, 5, 0], [0, 5, 5], [0, 0, 0]], // Z
+            [[6, 0, 0], [6, 6, 6], [0, 0, 0]], // J
+            [[0, 0, 7], [7, 7, 7], [0, 0, 0]], // L
         ];
 
         // Inisialisasi board
@@ -121,20 +136,43 @@
         let currentY = 0;
         let gameOver = false;
         let level = 1;
-        let gameSpeed = 1000; // Kecepatan awal (ms)
+        let gameSpeed = 1000;
 
-        // Tampilkan high score dan level awal
         highScoreElement.textContent = highScore;
         levelElement.textContent = level;
 
-        // Mainkan backsound
+        // Kontrol musik
+        let isMusicPlaying = false;
+        function toggleMusic() {
+            if (isMusicPlaying) {
+                backgroundMusic.pause();
+                musicControl.textContent = 'Play Music';
+            } else {
+                backgroundMusic.play().catch((e) => console.error("Failed to play music:", e));
+                musicControl.textContent = 'Mute Music';
+            }
+            isMusicPlaying = !isMusicPlaying;
+        }
+
+        // Coba putar musik saat game dimulai
         backgroundMusic.volume = 0.5;
-        backgroundMusic.play().catch((e) => {
+        backgroundMusic.play().then(() => {
+            isMusicPlaying = true;
+            musicControl.textContent = 'Mute Music';
+        }).catch((e) => {
             console.log("Autoplay blocked:", e);
-            document.addEventListener('keydown', () => {
-                backgroundMusic.play();
-            }, { once: true });
+            musicControl.textContent = 'Play Music';
         });
+
+        // Tangani interaksi sentuh untuk memutar musik
+        document.addEventListener('touchstart', () => {
+            if (!isMusicPlaying) {
+                toggleMusic();
+            }
+        }, { once: true });
+
+        // Kontrol tombol musik
+        musicControl.addEventListener('click', toggleMusic);
 
         // Membuat tetromino baru
         function createPiece() {
@@ -219,13 +257,13 @@
         // Perbarui kecepatan permainan
         function updateGameSpeed() {
             if (level <= 3) {
-                gameSpeed = 1000; // Level 1-3: 1 detik
+                gameSpeed = 1000;
             } else if (level <= 6) {
-                gameSpeed = 700; // Level 4-6: 0.7 detik
+                gameSpeed = 700;
             } else if (level <= 9) {
-                gameSpeed = 500; // Level 7-9: 0.5 detik
+                gameSpeed = 500;
             } else {
-                gameSpeed = 300; // Level 10+: 0.3 detik
+                gameSpeed = 300;
             }
         }
 
@@ -269,11 +307,12 @@
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            const blockSize = canvas.width / BOARD_WIDTH;
             for (let y = 0; y < BOARD_HEIGHT; y++) {
                 for (let x = 0; x < BOARD_WIDTH; x++) {
                     if (board[y][x] !== 0) {
                         ctx.fillStyle = COLORS[board[y][x]];
-                        ctx.fillRect(x * BLOCK_SIZE, y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                        ctx.fillRect(x * blockSize, y * blockSize, blockSize, blockSize);
                     }
                 }
             }
@@ -284,18 +323,18 @@
                         if (currentPiece[py][px] !== 0) {
                             ctx.fillStyle = COLORS[currentPiece[py][px]];
                             ctx.fillRect(
-                                (currentX + px) * BLOCK_SIZE,
-                                (currentY + py) * BLOCK_SIZE,
-                                BLOCK_SIZE,
-                                BLOCK_SIZE
+                                (currentX + px) * blockSize,
+                                (currentY + py) * blockSize,
+                                blockSize,
+                                blockSize
                             );
                             ctx.strokeStyle = '#00ff00';
                             ctx.lineWidth = 2;
                             ctx.strokeRect(
-                                (currentX + px) * BLOCK_SIZE,
-                                (currentY + py) * BLOCK_SIZE,
-                                BLOCK_SIZE,
-                                BLOCK_SIZE
+                                (currentX + px) * blockSize,
+                                (currentY + py) * blockSize,
+                                blockSize,
+                                blockSize
                             );
                         }
                     }
@@ -310,10 +349,10 @@
                 ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
                 ctx.fillStyle = '#00ff00';
-                ctx.font = '30px Courier New';
+                ctx.font = `${canvas.width / 10}px Courier New`;
                 ctx.textAlign = 'center';
                 ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2);
-                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+                ctx.fillText(`Score: ${score}`, canvas.width / 2, canvas.height / 2 + canvas.width / 10);
                 return;
             }
 
@@ -351,10 +390,35 @@
                     break;
                 case 'm':
                 case 'M':
-                    backgroundMusic.muted = !backgroundMusic.muted;
+                    toggleMusic();
                     break;
             }
             draw();
+        });
+
+        // Kontrol sentuh (opsional untuk mobile)
+        let touchStartX = null;
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX;
+        });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (touchStartX === null) return;
+            const touchX = e.touches[0].clientX;
+            const diff = touchX - touchStartX;
+            if (Math.abs(diff) > 30) {
+                if (diff > 0) movePiece(1, 0);
+                else movePiece(-1, 0);
+                touchStartX = touchX;
+                draw();
+            }
+        });
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            rotatePiece();
+            draw();
+            touchStartX = null;
         });
 
         // Mulai game
